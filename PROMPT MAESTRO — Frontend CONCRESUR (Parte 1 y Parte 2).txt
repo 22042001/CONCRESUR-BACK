@@ -1,0 +1,593 @@
+================================================================
+PROMPT MAESTRO — Frontend CONCRESUR con Vue.js 3
+Parte 1 de 2 — Iteraciones 1 y 2
+================================================================
+Usa este prompt como contrato global para las iteraciones 1 y 2.
+Cada iteración asume la anterior terminada y funcional.
+El backend ya está construido bajo /api/v1.
+
+================================================================
+STACK OBLIGATORIO
+================================================================
+Framework  : Vue.js 3 (Composition API con <script setup>)
+Router     : Vue Router 4
+Estado     : Pinia
+HTTP       : Axios con interceptores
+Estilos    : Tailwind CSS v3
+Notific.   : Vue Toastification
+Formularios: VeeValidate + Yup
+Build      : Vite
+
+================================================================
+ARQUITECTURA DE CARPETAS
+================================================================
+src/
+  api/
+    axios.js           ← instancia base + interceptores
+    auth.js
+    sistema.js
+    catalogos.js
+    inventario.js
+    ventas.js
+  assets/
+  components/
+    common/            ← componentes Base* reutilizables
+    layout/            ← TheSidebar, TheNavbar, AppLayout
+  composables/         ← useAuth, useCrud, etc.
+  directives/
+    permission.js      ← v-permission
+  router/
+    index.js
+  stores/
+    authStore.js
+    sistemaStore.js
+    catalogosStore.js
+    inventarioStore.js
+    ventasStore.js
+  utils/
+    formatters.js      ← moneda, fecha, estado → texto
+    constants.js       ← estados, métodos pago, tipos
+  views/
+    auth/
+    sistema/
+    catalogos/
+    inventario/
+    ventas/
+
+================================================================
+CONVENCIONES GLOBALES OBLIGATORIAS
+================================================================
+
+--- Nomenclatura de componentes ---
+Base*     → átomos reutilizables sin lógica de negocio
+             BaseButton, BaseInput, BaseSelect, BaseModal,
+             BaseTable, BaseBadge, BaseCard
+The*      → únicos de layout: TheSidebar, TheNavbar
+[Módulo]* → específicos del dominio: VentaForm, KanbanCard
+
+--- Composition API ---
+Siempre <script setup> en JS plano (sin TypeScript).
+Extraer lógica repetida a composables, las vistas son delgadas.
+Un composable por responsabilidad.
+
+--- Axios ---
+Una instancia en src/api/axios.js:
+  baseURL = import.meta.env.VITE_API_BASE_URL
+  Interceptor request: adjuntar Authorization: Bearer {token}
+  Interceptor response:
+    401 → limpiar authStore + router.push('/login')
+    403 → toast.error('Sin permisos para esta acción')
+    422 → retornar errores al llamador (para VeeValidate)
+    500 → toast.error('Error interno del servidor')
+Un archivo por módulo en src/api/ que exporta funciones puras.
+Nunca llamar axios directamente desde una vista.
+
+--- Pinia stores ---
+Un store por módulo con estructura: state / getters / actions.
+Las actions hacen la llamada API y mutan el state.
+Usar try/catch en todas las actions con toast en el catch.
+authStore persiste { token, user } en localStorage.
+
+--- Permisos ---
+Directiva v-permission="'ventas.ventas.crear'" que oculta
+el elemento del DOM si el usuario no tiene ese permiso.
+Guard de navegación verifica meta.permiso antes de entrar.
+Los permisos vienen del payload de GET /auth/me al hacer login.
+Claves de permiso exactas del backend:
+  sistema.usuarios.ver, sistema.usuarios.crear
+  sistema.roles.ver, sistema.roles.editar
+  catalogos.productos.ver, catalogos.productos.crear
+  inventario.stock.ver, inventario.ajuste.crear
+  ventas.cotizaciones.ver, ventas.cotizaciones.crear
+  ventas.ventas.ver, ventas.ventas.crear
+  ventas.ventas.confirmar
+
+--- Formularios ---
+VeeValidate + Yup en todos los formularios.
+Mostrar errores inline debajo de cada campo.
+Deshabilitar botón submit mientras hay request en vuelo.
+Nunca llamar a la API sin haber validado antes.
+
+--- Feedback visual ---
+Toast de éxito/error en toda operación CRUD.
+Spinner en tablas y formularios durante carga.
+Estado vacío con mensaje cuando no hay datos.
+Modal de confirmación antes de desactivar registros.
+
+--- Responsividad ---
+Sidebar colapsable en móvil con botón hamburguesa.
+Tablas con scroll horizontal en pantallas pequeñas.
+Formularios: 1 columna en móvil, 2 columnas en desktop.
+
+================================================================
+COMPONENTES BASE (crear en Iteración 1, usar en todas)
+================================================================
+BaseButton.vue
+  Props: label, variant(primary|secondary|danger|ghost),
+         loading(bool), disabled(bool)
+  Muestra spinner integrado cuando loading=true
+
+BaseInput.vue
+  Props: label, modelValue, type, placeholder, error, icon
+  Emite update:modelValue
+
+BaseSelect.vue
+  Props: label, modelValue, options([{value,label}]),
+         placeholder, error
+  Emite update:modelValue
+
+BaseModal.vue
+  Props: open(bool), title
+  Slots: default (contenido), footer (botones)
+  Emite close
+
+BaseTable.vue
+  Props: columns([{key,label}]), rows([]), loading(bool)
+  Loading skeleton de 5 filas mientras carga
+  Slot vacío con EmptyState cuando rows.length === 0
+
+BaseBadge.vue
+  Props: label, variant(success|warning|danger|info|gray)
+  Colores predefinidos por variante
+
+BaseCard.vue
+  Contenedor con sombra, padding y slot default
+
+ConfirmModal.vue
+  Props: open, title, message
+  Emite confirm, cancel
+  Botón confirmar en rojo (acción destructiva)
+
+PageHeader.vue
+  Props: title, description
+  Slot: actions (botones de la vista)
+
+EmptyState.vue
+  Props: message, icon
+  Ícono + mensaje centrado
+
+LoadingSpinner.vue
+  Spinner centrado, tamaño configurable
+
+SearchInput.vue
+  Props: modelValue, placeholder
+  Debounce interno de 400ms
+  Emite update:modelValue con valor debounced
+
+================================================================
+LAYOUT (crear en Iteración 1)
+================================================================
+TheSidebar.vue
+  Logo CONCRESUR en la parte superior
+  Menú agrupado por módulo:
+    Sistema     → Usuarios, Roles, Personal
+    Catálogos   → Productos
+    Inventario  → Stock, Kardex
+    Ventas      → Clientes, Cotizaciones, Ventas
+    Compras     → Proveedores, Compras         (placeholder)
+    Producción  → Órdenes, Tablet              (placeholder)
+    Logística   → Kanban                       (placeholder)
+    Financiero  → Cuentas por Cobrar/Pagar     (placeholder)
+  Cada ítem visible solo si el usuario tiene el permiso
+    correspondiente (usando hasPermiso del authStore)
+  Estado activo resaltado con color primario
+  Colapsable en móvil con botón hamburguesa
+
+TheNavbar.vue
+  Nombre y rol del usuario autenticado
+  Botón logout con ConfirmModal
+  Botón para colapsar/expandir sidebar en móvil
+
+AppLayout.vue
+  Sidebar fijo a la izquierda + contenido a la derecha
+  Slot default para las vistas
+
+================================================================
+ITERACIÓN 1 / 4 — Sistema, Auth y Catálogos
+================================================================
+MÓDULOS: Autenticación, Usuarios, Roles, Permisos,
+         Personal, Productos y Variantes
+ENDPOINTS CONSUMIDOS:
+  POST            /auth/login
+  POST            /auth/logout
+  GET             /auth/me
+  GET|POST        /sistema/usuarios
+  GET|PUT|DELETE  /sistema/usuarios/{id}
+  GET|POST        /sistema/roles
+  GET|PUT|DELETE  /sistema/roles/{id}
+  POST            /sistema/roles/{id}/permisos
+  GET             /sistema/permisos
+  GET|POST        /sistema/personal
+  GET|PUT|DELETE  /sistema/personal/{id}
+  GET|POST        /catalogos/productos
+  GET|PUT|DELETE  /catalogos/productos/{id}
+  GET|POST        /catalogos/productos/{id}/variantes
+  GET|PUT|DELETE  /catalogos/variantes/{id}
+
+--- Configuración inicial del proyecto ---
+Crear proyecto con Vite + Vue 3
+Instalar dependencias:
+  axios, pinia, vue-router@4, vee-validate, yup,
+  @heroicons/vue, vue-toastification
+Alias @ → src/ en vite.config.js
+Variable de entorno: VITE_API_BASE_URL=http://localhost:8000/api/v1
+Configurar Tailwind CSS v3 con content apuntando a src/**
+
+--- Stores ---
+authStore.js
+  state: { token: null, user: null, permisos: [] }
+  getters:
+    isAuthenticated: !!token
+    hasPermiso(clave): permisos.includes(clave)
+  actions:
+    login(credentials)
+      → POST /auth/login
+      → guardar token en localStorage + state
+      → guardar user y permisos desde response
+    logout()
+      → POST /auth/logout
+      → limpiar state + localStorage
+      → router.push('/login')
+    initAuth()
+      → al montar App.vue: restaurar token desde localStorage
+      → GET /auth/me para obtener user + permisos actuales
+      → si falla 401: limpiar y redirigir a /login
+
+sistemaStore.js
+  state: { usuarios: [], roles: [], permisos: [], personal: [] }
+  actions:
+    cargarUsuarios(), crearUsuario(data),
+    actualizarUsuario(id, data), desactivarUsuario(id),
+    cargarRoles(), crearRol(data),
+    actualizarRol(id, data), desactivarRol(id),
+    sincronizarPermisos(rol_id, permiso_ids),
+    cargarPermisos(),
+    cargarPersonal(filtros), crearPersonal(data),
+    actualizarPersonal(id, data), desactivarPersonal(id)
+
+catalogosStore.js
+  state: { productos: [], variantesMap: {} }
+  actions:
+    cargarProductos(), crearProducto(data),
+    actualizarProducto(id, data), desactivarProducto(id),
+    cargarVariantes(producto_id), crearVariante(data),
+    actualizarVariante(id, data), desactivarVariante(id)
+
+--- Router ---
+Rutas públicas:
+  { path: '/login', component: LoginView, meta: { guest: true } }
+  { path: '/403',   component: ForbiddenView }
+
+Rutas protegidas bajo AppLayout (meta: { requiresAuth: true }):
+  /dashboard
+  /sistema/usuarios   meta: { permiso: 'sistema.usuarios.ver' }
+  /sistema/roles      meta: { permiso: 'sistema.roles.ver' }
+  /sistema/personal   (solo requiresAuth)
+  /catalogos/productos meta: { permiso: 'catalogos.productos.ver' }
+
+Guards en beforeEach:
+  requiresAuth + no autenticado     → /login
+  permiso requerido + no lo tiene   → /403
+  guest + ya autenticado            → /dashboard
+
+--- Directiva de permisos ---
+src/directives/permission.js
+  v-permission="'sistema.usuarios.crear'"
+  Si el usuario no tiene la clave → v-if false (no renderiza)
+  Registrar globalmente en main.js
+
+--- Composables ---
+useAuth.js
+  Exponer: user, isAuthenticated, hasPermiso(),
+           login(), logout()
+
+useCrud.js (genérico reutilizable)
+  Parámetros: apiModule, storeName
+  Exponer: items, loading, error,
+           fetchAll(), create(), update(), deactivate()
+  Toast automático en cada operación
+
+--- Vistas ---
+LoginView.vue
+  Formulario centrado con logo CONCRESUR
+  Campos: email + password con validación Yup
+    email: required, email válido
+    password: required
+  BaseButton con loading durante request
+  Toast error si credenciales incorrectas
+  Redirect a /dashboard al autenticar
+
+DashboardView.vue
+  Bienvenida con nombre del usuario
+  4 BaseCards de resumen (datos cargados al montar):
+    Ventas del día       → GET /ventas/ventas?fecha=hoy
+    Stock bajo           → GET /inventario/stock (filtrar alerta)
+    Pedidos en camino    → GET /logistica/kanban (en_camino.length)
+    Cuentas por cobrar   → GET /ventas/cuentas-por-cobrar (total)
+  LoadingSpinner mientras cargan
+
+UsuariosView.vue
+  PageHeader con botón "Nuevo usuario"
+    v-permission="'sistema.usuarios.crear'"
+  SearchInput + BaseSelect filtro por rol
+  BaseTable columnas: nombre, email, rol, estado, acciones
+    estado: BaseBadge (activo=success, inactivo=gray)
+    acciones: editar, desactivar (v-permission)
+  Modal crear: nombre, email, contraseña (min 8), rol
+  Modal editar: nombre, email, rol, contraseña (opcional)
+  ConfirmModal al desactivar
+
+RolesView.vue
+  PageHeader con botón "Nuevo rol"
+    v-permission="'sistema.roles.editar'"
+  BaseTable columnas: nombre, cantidad permisos, acciones
+  Modal crear/editar: campo nombre
+  Modal "Asignar permisos":
+    GET /sistema/permisos → agrupar por prefijo del módulo
+      (todo lo que está antes del segundo punto en la clave)
+      Ejemplo: 'ventas.ventas.crear' → grupo 'ventas'
+    Checkboxes por grupo con seleccionar-todo por módulo
+    Botón guardar → POST /sistema/roles/{id}/permisos
+  ConfirmModal al desactivar
+
+PersonalView.vue
+  PageHeader con botón "Nuevo personal"
+  SearchInput + BaseSelect filtro por tipo
+    tipos: maestro | ayudante | soldador | chofer
+  BaseTable: nombre, tipo, teléfono, estado, acciones
+  Modal crear/editar: nombre, tipo (select), teléfono
+  ConfirmModal al desactivar
+
+ProductosView.vue
+  PageHeader con botón "Nuevo producto"
+    v-permission="'catalogos.productos.crear'"
+  SearchInput por nombre
+  BaseTable de productos:
+    nombre, descripción, estado, acciones (expandir, editar)
+    Fila expandible que muestra tabla de variantes:
+      nombre, unidad_medida, precio_venta, stock_actual,
+      stock_minimo, alerta_stock (BaseBadge rojo si alerta)
+      acciones: editar variante, desactivar variante
+  Modal crear/editar producto: nombre, descripción
+  Modal crear/editar variante:
+    nombre, unidad_medida, precio_venta, stock_minimo
+  ConfirmModal al desactivar producto
+    Mensaje: "Se desactivarán también todas sus variantes"
+  ConfirmModal al desactivar variante individual
+
+--- Checklist Iteración 1 ---
+[ ] Login guarda token y restaura sesión al recargar página
+[ ] initAuth() en App.vue llama GET /auth/me al iniciar
+[ ] Sidebar muestra solo módulos con permiso del usuario
+[ ] v-permission oculta botones sin autorización
+[ ] Guard redirige a /403 si falta permiso de la ruta
+[ ] CRUD completo: Usuarios, Roles, Personal
+[ ] CRUD completo: Productos y Variantes
+[ ] Sincronizar permisos a rol funciona con checkboxes agrupados
+[ ] Desactivar hace activo=false (nunca borra físico)
+[ ] Toast en toda operación CRUD (éxito y error)
+[ ] Formularios validan con Yup antes de llamar la API
+[ ] Spinner en tablas y formularios durante carga
+[ ] Estado vacío visible cuando no hay datos en tablas
+
+================================================================
+ITERACIÓN 2 / 4 — Inventario y Ventas
+================================================================
+MÓDULOS: Stock, Kardex, Clientes, Cotizaciones, Ventas
+ENDPOINTS CONSUMIDOS:
+  GET             /inventario/stock
+  GET             /inventario/kardex/{variante_id}
+  POST            /inventario/ajuste
+  GET|POST        /ventas/clientes
+  GET|PUT|DELETE  /ventas/clientes/{id}
+  GET|POST        /ventas/cotizaciones
+  GET             /ventas/cotizaciones/{id}
+  PUT             /ventas/cotizaciones/{id}
+  POST            /ventas/cotizaciones/{id}/confirmar
+  POST            /ventas/cotizaciones/{id}/anular
+  GET|POST        /ventas/ventas
+  GET             /ventas/ventas/{id}
+  GET             /ventas/cuentas-por-cobrar
+  POST            /ventas/ventas/{id}/abonos
+
+--- Nuevas rutas en el router ---
+  /inventario/stock     meta: { permiso: 'inventario.stock.ver' }
+  /inventario/kardex    meta: { permiso: 'inventario.stock.ver' }
+  /ventas/clientes      meta: { permiso: 'ventas.ventas.ver' }
+  /ventas/cotizaciones  meta: { permiso: 'ventas.cotizaciones.ver' }
+  /ventas/ventas        meta: { permiso: 'ventas.ventas.ver' }
+
+--- Stores ---
+inventarioStore.js
+  state: { stock: [], kardex: [], varianteSeleccionada: null }
+  actions:
+    cargarStock(filtros)
+    cargarKardex(variante_id, filtros)
+    ajustarStock(data)
+      → POST /inventario/ajuste
+      → recargar stock al completar
+
+ventasStore.js
+  state: { clientes: [], cotizaciones: [],
+           ventas: [], cuentasCobrar: [] }
+  actions:
+    cargarClientes(), crearCliente(data),
+    actualizarCliente(id, data), desactivarCliente(id),
+    cargarCotizaciones(), crearCotizacion(data),
+    confirmarCotizacion(id, data), anularCotizacion(id),
+    cargarVentas(filtros), crearVenta(data),
+    cargarVentaDetalle(id),
+    registrarAbonoVenta(venta_id, data)
+      → POST /ventas/ventas/{id}/abonos
+      → actualizar el registro en ventas sin refetch total,
+    cargarCuentasCobrar()
+
+--- Componentes específicos ---
+StockBadge.vue
+  Props: stock_actual(number), stock_minimo(number)
+  Muestra número en rojo + ícono ⚠️ si stock_actual <= stock_minimo
+  Muestra número en verde si stock_actual > stock_minimo
+
+ProductoVarianteSelector.vue
+  Paso 1: BaseSelect de productos activos
+    carga GET /catalogos/productos al montar
+  Paso 2: BaseSelect de variantes del producto elegido
+    filtra variantes activas del producto seleccionado
+  Al seleccionar variante: muestra precio_venta y stock_actual
+  Emite: { variante_id, precio_unitario, stock_actual, nombre }
+
+DetalleItemRow.vue
+  Fila editable dentro de un formulario de documento
+  Campos: ProductoVarianteSelector, cantidad(integer min 1),
+          precio_unitario(numeric, pre-llenado de variante),
+          subtotal = cantidad * precio_unitario (calculado)
+  Botón eliminar la fila
+  Emite cambios al padre en cada modificación
+
+TotalesFooter.vue
+  Props: items([{ cantidad, precio_unitario }]),
+         metodo_pago, adelanto
+  Muestra:
+    importe_total = suma de (cantidad * precio_unitario)
+    adelanto (editable si metodo_pago = 'Credito')
+    saldo_total = importe_total - adelanto
+  Si metodo_pago = 'Contado': adelanto = importe_total,
+    saldo = 0, campos no editables
+
+--- Vistas ---
+StockView.vue
+  PageHeader con botón "Ajuste manual"
+    v-permission="'inventario.ajuste.crear'"
+  SearchInput + BaseSelect filtro por producto
+  BaseTable columnas:
+    producto, variante, unidad_medida, precio_venta,
+    stock_actual (StockBadge), stock_minimo, acciones
+  Ordenar: alertas primero (stock_actual <= stock_minimo)
+  Modal ajuste manual:
+    BaseSelect variante (preseleccionada si viene de la fila)
+    BaseInput cantidad (positivo = entrada, negativo = salida)
+    BaseInput observación (required)
+    Validación Yup: cantidad != 0, observación no vacía
+
+KardexView.vue
+  BaseSelect variante en la parte superior (required)
+    Al cambiar variante: cargar kardex de esa variante
+  BaseTable cronológica columnas:
+    fecha, tipo (BaseBadge coloreado), cantidad,
+    referencia_tipo, stock_resultante
+    ENTRADA → badge verde
+    SALIDA  → badge rojo
+    AJUSTE  → badge amarillo
+  Paginación: botones anterior/siguiente, registros por página
+
+ClientesView.vue
+  PageHeader con botón "Nuevo cliente"
+  SearchInput por nombre o teléfono
+  BaseTable: nombre, teléfono, dirección, estado, acciones
+  Modal crear/editar: nombre, teléfono, dirección
+  ConfirmModal al desactivar
+
+CotizacionesView.vue
+  PageHeader con botón "Nueva cotización"
+    v-permission="'ventas.cotizaciones.crear'"
+  Filtro por estado (BaseSelect)
+  BaseTable columnas:
+    número, cliente, importe_total, estado, fecha, acciones
+    estado: BaseBadge
+      Pendiente  → warning (amarillo)
+      Confirmada → success (verde)
+      Anulada    → gray
+  Modal crear cotización:
+    BaseSelect cliente (required)
+    Filas de ítems con DetalleItemRow (mínimo 1)
+    TotalesFooter (sin metodo_pago en cotización)
+    Botón agregar fila
+  Panel lateral al click en fila:
+    Datos de la cotización y detalle de ítems
+    Si estado = 'Pendiente':
+      Botón "Confirmar como Venta"
+        v-permission="'ventas.ventas.confirmar'"
+        Abre modal con:
+          metodo_pago: Contado | Credito
+          forma_pago: Efectivo | QR
+          adelanto (si Credito)
+          fecha_entrega (opcional)
+          TotalesFooter pre-llenado
+      Botón "Anular" → ConfirmModal
+  NOTA: NO existe estado Expirada. La anulación es manual.
+
+VentasView.vue
+  PageHeader con botón "Nueva venta directa"
+    v-permission="'ventas.ventas.crear'"
+  Filtros: BaseSelect estado_operativo, BaseSelect estado_financiero
+  BaseTable columnas:
+    número, cliente, importe_total,
+    estado_operativo (BaseBadge), estado_financiero (BaseBadge),
+    fecha_entrega, acciones
+    estado_operativo colores:
+      Confirmada    → gray
+      En produccion → warning (amarillo)
+      Lista         → info (azul)
+      En camino     → naranja (usar clase Tailwind orange)
+      Completada    → success (verde)
+    estado_financiero:
+      Pendiente → danger (rojo)
+      Pagado    → success (verde)
+  Modal nueva venta directa:
+    BaseSelect cliente (required)
+    metodo_pago: Contado | Credito
+    forma_pago: Efectivo | QR
+    fecha_entrega (opcional)
+    adelanto (si Credito)
+    Filas con DetalleItemRow
+    TotalesFooter
+  Panel lateral al click en fila (GET /ventas/ventas/{id}):
+    Datos completos de la venta
+    Sección "Resultado de stock por ítem":
+      Por cada ítem mostrar:
+        ✅ "Con stock — descontado del inventario" (si hubo SALIDA)
+        🔄 "Sin stock — Orden de producción [OP-XXXX] generada"
+      Esta info viene del estado_operativo y de las órdenes
+      vinculadas (si el backend las devuelve en el detalle)
+    Sección "Abonos registrados":
+      Lista de abonos con monto, forma_pago, fecha
+    Si estado_financiero = 'Pendiente':
+      Botón "Registrar abono":
+        modal con monto (required, > 0) y forma_pago
+        Al guardar: actualizar saldo en el panel sin recargar tabla
+
+--- Checklist Iteración 2 ---
+[ ] Stock ordena alertas primero y muestra badge rojo
+[ ] Ajuste de stock requiere observación (validado)
+[ ] Kardex muestra colores por tipo de movimiento
+[ ] Selector Producto → Variante pre-llena precio y muestra stock
+[ ] Crear cotización calcula totales reactivamente en TotalesFooter
+[ ] Confirmar cotización pre-llena formulario de venta con sus datos
+[ ] Cotización NO tiene estado Expirada ni countdown
+[ ] Anulación de cotización es manual con ConfirmModal
+[ ] Al crear venta se muestra qué ítems generaron orden de producción
+[ ] Registrar abono actualiza saldo en el panel sin recargar tabla
+[ ] Contado: adelanto = importe_total, saldo = 0 automáticamente
+[ ] CRUD completo: Clientes, Cotizaciones, Ventas
+[ ] Panel lateral de venta muestra detalle completo
+================================================================

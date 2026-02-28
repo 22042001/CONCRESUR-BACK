@@ -1,0 +1,327 @@
+{
+  "info": {
+    "_postman_id": "8f6b53e5-2206-45a7-b925-4af31ea84a01",
+    "name": "CONCRESUR - Iteracion 3",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Compras - Listar",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/compras",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "compras"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "if (pm.response.code === 200) {",
+              "    var jsonData = pm.response.json();",
+              "    if (jsonData.data && jsonData.data.length > 0) {",
+              "        pm.collectionVariables.set('compra_id', jsonData.data[0].id);",
+              "    }",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Compras - Crear",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"categoria_id\": {{categoria_compra_id}},\n  \"proveedor_id\": {{proveedor_id}},\n  \"usuario_id\": {{usuario_id}},\n  \"metodo_pago\": \"Credito\",\n  \"forma_pago\": \"Efectivo\",\n  \"detalles\": [\n    {\n      \"descripcion\": \"Cemento Portland\",\n      \"cantidad\": 10,\n      \"unidad_medida\": \"bolsa\",\n      \"precio_unitario\": 45.50\n    }\n  ]\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/compras",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "compras"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Compra creada', function () {",
+              "    pm.response.to.have.status(201);",
+              "});",
+              "",
+              "var jsonData = pm.response.json();",
+              "",
+              "pm.test('Respuesta incluye id de compra', function () {",
+              "    pm.expect(jsonData.data.id).to.exist;",
+              "});",
+              "",
+              "pm.collectionVariables.set('compra_id', jsonData.data.id);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Compras - Ver",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/compras/{{compra_id}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "compras",
+            "{{compra_id}}"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Compras - Registrar Abono",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"monto\": 100.00,\n  \"forma_pago\": \"Efectivo\",\n  \"usuario_id\": {{usuario_id}}\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/compras/{{compra_id}}/abonos",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "compras",
+            "{{compra_id}}",
+            "abonos"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Ordenes Produccion - Listar",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/ordenes-produccion",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "ordenes-produccion"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "if (pm.response.code === 200) {",
+              "    var jsonData = pm.response.json();",
+              "    if (jsonData.data && jsonData.data.length > 0) {",
+              "        pm.collectionVariables.set('orden_produccion_id', jsonData.data[0].id);",
+              "    }",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Ordenes Produccion - Crear",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"variante_id\": {{variante_id}},\n  \"venta_id\": {{venta_id}},\n  \"cantidad_requerida\": 30,\n  \"fecha_entrega_requerida\": \"2026-03-20\",\n  \"creado_por\": {{usuario_id}},\n  \"personal_ids\": [{{personal_id}}]\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/ordenes-produccion",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "ordenes-produccion"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Orden produccion creada', function () {",
+              "    pm.response.to.have.status(201);",
+              "});",
+              "",
+              "var jsonData = pm.response.json();",
+              "",
+              "pm.test('Respuesta incluye id de orden', function () {",
+              "    pm.expect(jsonData.data.id).to.exist;",
+              "});",
+              "",
+              "pm.collectionVariables.set('orden_produccion_id', jsonData.data.id);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Ordenes Produccion - Ver",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/ordenes-produccion/{{orden_produccion_id}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "ordenes-produccion",
+            "{{orden_produccion_id}}"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Ordenes Produccion - Registrar Produccion",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"maestro_id\": {{personal_id}},\n  \"cantidad_fabricada\": 10,\n  \"fecha\": \"2026-03-10\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/ordenes-produccion/{{orden_produccion_id}}/registros",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "ordenes-produccion",
+            "{{orden_produccion_id}}",
+            "registros"
+          ]
+        }
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://127.0.0.1:8000/api/v1"
+    },
+    {
+      "key": "categoria_compra_id",
+      "value": "1"
+    },
+    {
+      "key": "proveedor_id",
+      "value": "1"
+    },
+    {
+      "key": "usuario_id",
+      "value": "1"
+    },
+    {
+      "key": "variante_id",
+      "value": "1"
+    },
+    {
+      "key": "venta_id",
+      "value": "1"
+    },
+    {
+      "key": "personal_id",
+      "value": "1"
+    },
+    {
+      "key": "compra_id",
+      "value": ""
+    },
+    {
+      "key": "orden_produccion_id",
+      "value": ""
+    }
+  ]
+}

@@ -1,0 +1,256 @@
+{
+  "info": {
+    "_postman_id": "9d25611a-cb52-4700-a110-1a9736857d5f",
+    "name": "CONCRESUR - Iteracion 4",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Auth - Login",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"admin@concresur.com\",\n  \"password\": \"password\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/auth/login",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "auth",
+            "login"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Login responde 200', function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "var jsonData = pm.response.json();",
+              "pm.collectionVariables.set('bearer_token', jsonData.access_token);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Logistica - Kanban",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{bearer_token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/logistica/kanban",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "logistica",
+            "kanban"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Logistica - Pedidos Listar",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{bearer_token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/logistica/pedidos",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "logistica",
+            "pedidos"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "if (pm.response.code === 200) {",
+              "    var jsonData = pm.response.json();",
+              "    if (jsonData.data && jsonData.data.length > 0) {",
+              "        pm.collectionVariables.set('pedido_logistico_id', jsonData.data[0].id);",
+              "    }",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Logistica - Pedido Ver",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{bearer_token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/logistica/pedidos/{{pedido_logistico_id}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "logistica",
+            "pedidos",
+            "{{pedido_logistico_id}}"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Logistica - Mover a En camino",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{bearer_token}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"estado\": \"En camino\",\n  \"observaciones\": \"Salida de planta\",\n  \"usuario_id\": {{usuario_id}}\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/logistica/pedidos/{{pedido_logistico_id}}/estado",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "logistica",
+            "pedidos",
+            "{{pedido_logistico_id}}",
+            "estado"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "if (pm.response.code === 200) {",
+              "    var jsonData = pm.response.json();",
+              "    if (jsonData.data && jsonData.data.id) {",
+              "        pm.collectionVariables.set('pedido_logistico_id', jsonData.data.id);",
+              "    }",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Logistica - Mover a Entregado",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{bearer_token}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"estado\": \"Entregado\",\n  \"observaciones\": \"Entrega finalizada\",\n  \"usuario_id\": {{usuario_id}}\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/logistica/pedidos/{{pedido_logistico_id}}/estado",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "logistica",
+            "pedidos",
+            "{{pedido_logistico_id}}",
+            "estado"
+          ]
+        }
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://127.0.0.1:8000/api/v1"
+    },
+    {
+      "key": "bearer_token",
+      "value": ""
+    },
+    {
+      "key": "usuario_id",
+      "value": "1"
+    },
+    {
+      "key": "pedido_logistico_id",
+      "value": ""
+    }
+  ]
+}

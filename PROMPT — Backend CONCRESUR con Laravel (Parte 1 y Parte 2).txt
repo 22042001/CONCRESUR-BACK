@@ -1,0 +1,528 @@
+Usa el Prompt Maestro como contrato global para todas
+las iteraciones. Cada iteración asume la anterior
+terminada y funcional.
+
+=======================================================
+ITERACIÓN 1 / 4 — Sistema + Catálogos
+=======================================================
+MÓDULOS: Sistema, Autenticación, Catálogos
+TABLAS: rol, permiso, rol_permiso, usuario, personal,
+        producto, variante_producto
+
+NOTA SOBRE EL DDL
+- No existe tabla empresa ni tabla unidad_medida.
+- unidad_medida es VARCHAR(30) directo en
+  variante_producto.
+- personal es tabla separada de usuario: maestros y
+  personal de jornal no tienen login al sistema.
+
+--- MIGRACIONES (en este orden exacto) ---
+1. create_rols_table
+     id SMALLSERIAL PK
+     nombre VARCHAR(50) NOT NULL UNIQUE
+2. create_permisos_table
+     id SMALLSERIAL PK
+     clave VARCHAR(50) NOT NULL UNIQUE
+     nombre VARCHAR(80) NOT NULL
+3. create_rol_permisos_table
+     PK compuesta (rol_id, permiso_id)
+     ambas FK con ON DELETE CASCADE
+4. create_usuarios_table
+     id SERIAL PK
+     nombre VARCHAR(120)
+     email VARCHAR(150) UNIQUE
+     password_hash TEXT NOT NULL
+     rol_id SMALLINT FK rol
+     activo BOOLEAN DEFAULT TRUE
+     creado_en TIMESTAMPTZ DEFAULT NOW()
+5. create_personals_table
+     id SERIAL PK
+     nombre VARCHAR(120)
+     telefono VARCHAR(20)
+     tipo VARCHAR(30) — 'maestro'|'ayudante'|
+                         'soldador'|'chofer'
+     activo BOOLEAN DEFAULT TRUE
+     creado_en TIMESTAMPTZ DEFAULT NOW()
+6. create_productos_table
+     id SERIAL PK
+     nombre VARCHAR(150)
+     descripcion TEXT
+     activo BOOLEAN DEFAULT TRUE
+     creado_en TIMESTAMPTZ DEFAULT NOW()
+7. create_variante_productos_table
+     id SERIAL PK
+     producto_id INTEGER FK producto
+     nombre VARCHAR(150)
+     unidad_medida VARCHAR(30) DEFAULT 'unidad'
+     precio_venta NUMERIC(12,2) DEFAULT 0
+     stock_actual INTEGER DEFAULT 0
+     stock_minimo INTEGER DEFAULT 0
+     activo BOOLEAN DEFAULT TRUE
+     creado_en TIMESTAMPTZ DEFAULT NOW()
+
+--- SEEDERS ---
+- RolSeeder:
+    'administrador','ventas','compras',
+    'logistica','maestro','jornal'
+- PermisoSeeder (claves):
+    sistema.usuarios.ver, sistema.usuarios.crear
+    sistema.roles.ver, sistema.roles.editar
+    catalogos.productos.ver, catalogos.productos.crear
+    inventario.stock.ver, inventario.ajuste.crear
+    ventas.cotizaciones.ver, ventas.cotizaciones.crear
+    ventas.ventas.ver, ventas.ventas.crear
+    ventas.ventas.confirmar
+    compras.compras.ver, compras.compras.crear
+    produccion.ordenes.ver, produccion.registros.crear
+    produccion.jornal.crear
+    logistica.kanban.ver, logistica.kanban.mover
+- RolPermisoSeeder: todos los permisos a administrador
+- UsuarioAdminSeeder: usuario admin inicial
+- PersonalSeeder: 3-5 registros de ejemplo
+- ProductoSeeder: 3 productos con 2 variantes cada uno
+- Orden en DatabaseSeeder:
+    RolSeeder → PermisoSeeder → RolPermisoSeeder
+    → UsuarioAdminSeeder → PersonalSeeder
+    → ProductoSeeder
+
+--- MODELOS Y RELACIONES ---
+- Rol:
+    belongsToMany Permiso via rol_permiso
+    hasMany Usuario
+    fillable: [nombre]
+- Permiso:
+    belongsToMany Rol via rol_permiso
+    fillable: [clave, nombre]
+- Usuario: implementa JWTSubject
+    belongsTo Rol
+    fillable: [nombre, email, rol_id, activo]
+    hidden: [password_hash]
+    casts: [activo => boolean, creado_en => datetime]
+    scope: scopeActivos()
+    getJWTIdentifier() → id
+    getJWTCustomClaims() → []
+- Personal:
+    fillable: [nombre, telefono, tipo, activo]
+    scope: scopeActivos()
+    casts: [activo => boolean]
+- Producto:
+    hasMany VarianteProducto
+    fillable: [nombre, descripcion, activo]
+    scope: scopeActivos()
+- VarianteProducto:
+    belongsTo Producto
+    fillable: [producto_id, nombre, unidad_medida,
+               precio_venta, stock_actual,
+               stock_minimo, activo]
+    scope: scopeActivos()
+    scope: scopeStockBajo() → stock_actual <= stock_minimo
+
+--- FORM REQUESTS ---
+- LoginRequest:
+    email required|email
+    password required
+- StoreUsuarioRequest:
+    nombre required
+    email required|unique:usuario
+    password required|min:8
+    rol_id required|exists:rol,id
+- UpdateUsuarioRequest:
+    nombre required
+    email unique:usuario ignorando id actual
+    password nullable|min:8
+    rol_id exists:rol,id
+- StoreRolRequest: nombre required|unique:rol
+- UpdateRolRequest: nombre required|unique ignorando id
+- SincronizarPermisosRequest:
+    permisos array required
+    permisos.* exists:permiso,id
+- StorePersonalRequest:
+    nombre required
+    tipo required|in:maestro,ayudante,soldador,chofer
+    telefono nullable
+- UpdatePersonalRequest: igual con nullable
+- StoreProductoRequest: nombre required
+- UpdateProductoRequest: nombre required
+- StoreVarianteRequest:
+    nombre required
+    producto_id required|exists:producto,id
+    precio_venta numeric|min:0
+    stock_minimo integer|min:0
+    unidad_medida nullable
+- UpdateVarianteRequest: igual
+
+--- API RESOURCES ---
+- UsuarioResource:
+    id, nombre, email, activo, creado_en
+    rol: RolResource (sin permisos en este contexto)
+    SIN password_hash
+- RolResource:
+    id, nombre
+    permisos: colección PermisoResource
+- PermisoResource: id, clave, nombre
+- PersonalResource: id, nombre, telefono, tipo, activo
+- ProductoResource:
+    id, nombre, descripcion, activo
+    variantes: colección VarianteResource
+- VarianteResource:
+    id, nombre, unidad_medida, precio_venta
+    stock_actual, stock_minimo, activo
+    alerta_stock: bool calculado
+      (stock_actual <= stock_minimo)
+
+--- SERVICES ---
+- AuthService:
+    login(credentials): valida credenciales, genera token,
+      retorna token + UsuarioResource con rol y permisos
+    logout(): invalida token JWT
+    refresh(): refresca token
+    me(): retorna usuario autenticado con rol y permisos
+- UsuarioService:
+    listar(filtros): activos, filtro por rol opcional
+    crear(data): bcrypt en password_hash, en transaction
+    actualizar(id, data): bcrypt si viene password
+    desactivar(id): activo = false
+- RolService:
+    listar(): con permisos
+    crear(data), actualizar(id, data)
+    sincronizarPermisos(id, permiso_ids): sync en pivot
+- PersonalService:
+    listar(filtros): filtro por tipo
+    crear(data), actualizar(id, data), desactivar(id)
+- ProductoService:
+    listar(filtros): con variantes activas
+    crear(data), actualizar(id, data)
+    desactivar(id): desactiva producto y sus variantes
+- VarianteService:
+    listar(producto_id)
+    crear(data), actualizar(id, data), desactivar(id)
+
+--- MIDDLEWARE ---
+- JwtMiddleware: valida token, retorna 401 si inválido
+- CheckPermiso(clave): verifica clave en rol_permiso
+  del rol del usuario, retorna 403 si no tiene acceso
+
+--- CONTROLLERS (thin) ---
+- Auth/AuthController: login, logout, refresh, me
+- Sistema/UsuarioController: index, store, show,
+  update, destroy
+- Sistema/RolController: index, store, show, update,
+  destroy, sincronizarPermisos
+- Sistema/PermisoController: index
+- Sistema/PersonalController: index, store, show,
+  update, destroy
+- Catalogos/ProductoController: index, store, show,
+  update, destroy
+- Catalogos/VarianteController: index, store, show,
+  update, destroy
+
+--- RUTAS /api/v1 ---
+Públicas:
+  POST  auth/login
+
+Protegidas (jwt.auth):
+  POST  auth/logout
+  POST  auth/refresh
+  GET   auth/me
+
+  GET|POST        sistema/usuarios
+  GET|PUT|DELETE  sistema/usuarios/{id}
+
+  GET|POST        sistema/roles
+  GET|PUT|DELETE  sistema/roles/{id}
+  POST            sistema/roles/{id}/permisos
+                  [check.permiso:sistema.roles.editar]
+
+  GET             sistema/permisos
+
+  GET|POST        sistema/personal
+  GET|PUT|DELETE  sistema/personal/{id}
+
+  GET|POST        catalogos/productos
+  GET|PUT|DELETE  catalogos/productos/{id}
+  GET|POST        catalogos/productos/{id}/variantes
+  GET|PUT|DELETE  catalogos/variantes/{id}
+
+--- POSTMAN ---
+Carpetas: Auth | Sistema/Usuarios | Sistema/Roles |
+          Sistema/Personal | Catálogos
+Script en login:
+  pm.environment.set("token",
+    pm.response.json().data.token)
+Authorization Bearer {{token}} a nivel colección
+{{base_url}} = http://localhost:8000/api/v1
+
+--- CHECKLIST ITERACIÓN 1 ---
+[ ] Login retorna token + usuario + rol + permisos
+[ ] JWT bloquea rutas sin token (401)
+[ ] CheckPermiso bloquea sin permiso (403)
+[ ] DELETE hace activo=false, no borra físico
+[ ] password_hash nunca aparece en responses
+[ ] RolResource incluye permisos
+[ ] VarianteResource incluye alerta_stock calculado
+[ ] Seeders ejecutan sin error
+[ ] Migraciones en orden sin errores de FK
+
+
+=======================================================
+ITERACIÓN 2 / 4 — Inventario + Ventas
+=======================================================
+MÓDULOS: Inventario, Ventas
+TABLAS: cliente, cotizacion, detalle_cotizacion,
+        venta, detalle_venta, abono_venta,
+        movimiento_inventario
+
+CAMBIOS CRÍTICOS RESPECTO A VERSIONES ANTERIORES
+- NO existe fecha_expiracion en cotizacion (DDL v1.2)
+- Estados cotización: 'Pendiente'|'Confirmada'|'Anulada'
+- NO existe estado 'Expirada'
+- NO existe comando cotizaciones:expirar
+- Anulación es MANUAL por la encargada
+
+--- MIGRACIONES (en este orden exacto) ---
+1. create_clientes_table
+     id, nombre VARCHAR(150), telefono VARCHAR(20)
+     direccion VARCHAR(50) NULL
+     activo BOOLEAN DEFAULT TRUE, creado_en
+2. create_cotizacions_table
+     id, numero VARCHAR(20) NOT NULL UNIQUE
+     cliente_id FK cliente
+     importe_total NUMERIC(14,2) DEFAULT 0
+     estado VARCHAR(15) DEFAULT 'Pendiente'
+     creado_en TIMESTAMPTZ DEFAULT NOW()
+     confirmada_en TIMESTAMPTZ NULL
+     venta_id INTEGER NULL (FK diferida)
+     usuario_id FK usuario NULL
+3. create_detalle_cotizacions_table
+     id, cotizacion_id FK ON DELETE CASCADE
+     variante_id FK variante_producto
+     cantidad INTEGER
+     precio_unitario NUMERIC(12,2)
+     subtotal GENERATED ALWAYS AS
+       (cantidad * precio_unitario) STORED
+4. create_ventas_table
+     id, numero VARCHAR(20) NOT NULL UNIQUE
+     cliente_id FK, cotizacion_id FK NULL
+     metodo_pago VARCHAR(10), forma_pago VARCHAR(10)
+     fecha_entrega DATE NULL
+     importe_total NUMERIC(14,2) DEFAULT 0
+     adelanto NUMERIC(14,2) DEFAULT 0
+     saldo_total NUMERIC(14,2) DEFAULT 0
+     estado_operativo VARCHAR(20) DEFAULT 'Confirmada'
+       valores: 'Confirmada'|'En produccion'|'Lista'|
+                'En camino'|'Completada'
+     estado_financiero VARCHAR(10) DEFAULT 'Pagado'
+       valores: 'Pendiente'|'Pagado'
+     usuario_id FK NULL, creado_en
+     completada_en TIMESTAMPTZ NULL
+5. create_detalle_ventas_table
+     id, venta_id FK ON DELETE CASCADE
+     variante_id FK, cantidad INTEGER
+     precio_unitario NUMERIC(12,2)
+     subtotal GENERATED ALWAYS AS
+       (cantidad * precio_unitario) STORED
+6. create_abono_ventas_table
+     id, venta_id FK ON DELETE CASCADE
+     monto NUMERIC(14,2), forma_pago VARCHAR(10)
+     usuario_id FK NULL, creado_en
+7. create_movimiento_inventarios_table
+     id BIGSERIAL, variante_id FK
+     tipo VARCHAR(10) — 'ENTRADA'|'SALIDA'|'AJUSTE'
+     cantidad INTEGER, stock_resultante INTEGER
+     referencia_tipo VARCHAR(30) NULL
+     referencia_id INTEGER NULL
+     observacion TEXT NULL, creado_en
+8. FK diferida en migración separada:
+     ALTER TABLE cotizacion ADD CONSTRAINT
+     fk_cotizacion_venta FOREIGN KEY (venta_id)
+     REFERENCES venta(id)
+
+--- SEEDERS ---
+- ClienteSeeder: 5 clientes de ejemplo
+
+--- MODELOS Y RELACIONES ---
+- Cliente:
+    hasMany Cotizacion, hasMany Venta
+    fillable: [nombre, telefono, direccion, activo]
+    scope: scopeActivos()
+- Cotizacion:
+    belongsTo Cliente, belongsTo Usuario
+    belongsTo Venta (nullable, via venta_id)
+    hasMany DetalleCotizacion
+    fillable: [numero, cliente_id, importe_total,
+               estado, venta_id, usuario_id]
+    booted(): creating → asignar numero COT-XXXX
+      (DB::transaction + lockForUpdate)
+- DetalleCotizacion:
+    belongsTo Cotizacion, belongsTo VarianteProducto
+    fillable: [cotizacion_id, variante_id,
+               cantidad, precio_unitario]
+    subtotal es GENERATED, nunca asignar
+- Venta:
+    belongsTo Cliente
+    belongsTo Cotizacion (nullable)
+    hasMany DetalleVenta, hasMany AbonoVenta
+    hasOne PedidoLogistico
+    fillable: [numero, cliente_id, cotizacion_id,
+               metodo_pago, forma_pago, fecha_entrega,
+               importe_total, adelanto, saldo_total,
+               estado_operativo, estado_financiero,
+               usuario_id, completada_en]
+    booted(): creating → asignar numero VTA-XXXX
+- DetalleVenta:
+    belongsTo Venta, belongsTo VarianteProducto
+    fillable: [venta_id, variante_id,
+               cantidad, precio_unitario]
+    subtotal es GENERATED, nunca asignar
+- AbonoVenta:
+    belongsTo Venta, belongsTo Usuario
+    fillable: [venta_id, monto, forma_pago, usuario_id]
+    Observer: AbonoVentaObserver (definido en Maestro)
+- MovimientoInventario:
+    belongsTo VarianteProducto
+    fillable: [variante_id, tipo, cantidad,
+               stock_resultante, referencia_tipo,
+               referencia_id, observacion]
+
+--- FORM REQUESTS ---
+- StoreClienteRequest:
+    nombre required, telefono nullable, direccion nullable
+- UpdateClienteRequest: igual
+- StoreCotizacionRequest:
+    cliente_id required|exists:cliente,id
+    items array required|min:1
+    items.*.variante_id exists:variante_producto,id
+    items.*.cantidad integer|min:1
+    items.*.precio_unitario numeric|min:0
+- ConfirmarCotizacionRequest:
+    metodo_pago required|in:Contado,Credito
+    forma_pago required|in:Efectivo,QR
+    fecha_entrega nullable|date
+    adelanto numeric|min:0
+- StoreVentaDirectaRequest:
+    cliente_id required|exists:cliente,id
+    metodo_pago required|in:Contado,Credito
+    forma_pago required|in:Efectivo,QR
+    fecha_entrega nullable|date
+    adelanto numeric|min:0
+    items array required|min:1
+    items.*.variante_id, cantidad, precio_unitario
+- AbonoVentaRequest:
+    monto required|numeric|min:0.01
+    forma_pago required|in:Efectivo,QR
+- AjusteInventarioRequest:
+    variante_id required|exists:variante_producto,id
+    cantidad required|integer|not_in:0
+    observacion required|string
+
+--- API RESOURCES ---
+- ClienteResource:
+    id, nombre, telefono, direccion, activo
+- CotizacionResource:
+    id, numero, estado, importe_total, creado_en,
+    confirmada_en, cliente (ClienteResource)
+    items: colección DetalleCotizacionResource
+- DetalleCotizacionResource:
+    variante_id, nombre variante, cantidad,
+    precio_unitario, subtotal
+- VentaResource:
+    id, numero, estado_operativo, estado_financiero,
+    metodo_pago, forma_pago, importe_total, adelanto,
+    saldo_total, fecha_entrega, creado_en, completada_en
+    cliente: ClienteResource
+    items: colección DetalleVentaResource
+- DetalleVentaResource: igual a DetalleCotizacionResource
+- AbonoVentaResource: id, monto, forma_pago, creado_en
+- MovimientoInventarioResource:
+    id, tipo, cantidad, stock_resultante,
+    referencia_tipo, creado_en
+- StockResource:
+    variante_id, nombre, producto, unidad_medida,
+    stock_actual, stock_minimo, alerta_stock (bool)
+
+--- SERVICES ---
+InventarioService:
+  getStockActual(filtros):
+    variantes con stock, precio, alerta_stock calculado
+  getKardex(variante_id, filtros):
+    historial movimientos DESC por creado_en
+  ajustarStock(variante_id, cantidad, observacion):
+    DB::transaction() + lockForUpdate() sobre variante
+    stock_actual += cantidad (puede ser negativo)
+    insertar movimiento_inventario tipo 'AJUSTE'
+    stock_resultante = nuevo stock_actual
+
+CotizacionService:
+  crear(data, usuario_id):
+    DB::transaction():
+      generar numero COT-XXXX con lockForUpdate()
+      crear cotizacion estado 'Pendiente'
+      insertar detalle_cotizacion
+      calcular y guardar importe_total
+  confirmarComoVenta(id, data, usuario_id):
+    Validar estado == 'Pendiente'
+    DB::transaction():
+      crear Venta via VentaService::crear()
+      cotizacion.estado = 'Confirmada'
+      cotizacion.confirmada_en = NOW()
+      cotizacion.venta_id = nueva_venta.id
+  anular(id):
+    Validar estado == 'Pendiente'
+    cotizacion.estado = 'Anulada'
+
+VentaService:
+  crear(data, usuario_id):
+    DB::transaction():
+      generar numero VTA-XXXX con lockForUpdate()
+      Calcular estado_financiero inicial:
+        Contado → estado_financiero='Pagado',
+          adelanto=importe_total, saldo_total=0
+        Credito → estado_financiero='Pendiente',
+          saldo_total=importe_total-adelanto
+      Crear venta
+      Por cada item:
+        leer variante con lockForUpdate()
+        Si stock_actual >= cantidad:
+          stock_actual -= cantidad
+          insertar movimiento 'SALIDA'
+            ref 'detalle_venta'
+          insertar detalle_venta
+        Si stock_actual < cantidad:
+          venta.estado_operativo = 'En produccion'
+          PENDIENTE ITER 3: llamar
+            OrdenProduccionService::crearAutomatica()
+          insertar detalle_venta sin descontar stock
+      Actualizar importe_total = suma de subtotales
+
+--- RUTAS /api/v1 ---
+  GET             inventario/stock
+  GET             inventario/kardex/{variante_id}
+  POST            inventario/ajuste
+                  [check.permiso:inventario.ajuste.crear]
+
+  GET|POST        ventas/clientes
+  GET|PUT|DELETE  ventas/clientes/{id}
+
+  GET|POST        ventas/cotizaciones
+  GET             ventas/cotizaciones/{id}
+  PUT             ventas/cotizaciones/{id}
+  POST            ventas/cotizaciones/{id}/confirmar
+                  [check.permiso:ventas.ventas.confirmar]
+  POST            ventas/cotizaciones/{id}/anular
+
+  GET|POST        ventas/ventas
+  GET             ventas/ventas/{id}
+  GET             ventas/cuentas-por-cobrar
+  POST            ventas/ventas/{id}/abonos
+
+--- CHECKLIST ITERACIÓN 2 ---
+[ ] Cotización sin fecha_expiracion ni estado Expirada
+[ ] Confirmar cotización crea venta y vincula venta_id
+[ ] Venta directa funciona sin cotización previa
+[ ] Con stock: descuenta + kardex + pedido 'Lista'
+[ ] Sin stock: venta 'En produccion', sin kardex aún
+[ ] AbonoVentaObserver recalcula saldo automáticamente
+[ ] Al completar abonos: estado_financiero = 'Pagado'
+[ ] Contado: estado_financiero='Pagado' desde creación
+[ ] subtotal en detalles es GENERATED, no se asigna
+[ ] lockForUpdate() presente en toda operación de stock

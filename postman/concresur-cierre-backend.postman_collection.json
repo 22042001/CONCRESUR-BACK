@@ -1,0 +1,204 @@
+{
+  "info": {
+    "_postman_id": "a2b65f17-6f78-492b-b538-0e5ce90f1a78",
+    "name": "CONCRESUR - Cierre Backend",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Auth - Login Admin",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Accept", "value": "application/json" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"admin@concresur.com\",\n  \"password\": \"password\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/auth/login",
+          "host": ["{{base_url}}"],
+          "path": ["auth", "login"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.response.to.have.status(200);",
+              "var jsonData = pm.response.json();",
+              "pm.collectionVariables.set('bearer_token', jsonData.access_token);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Auth - Me con permisos",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Accept", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{bearer_token}}" }
+        ],
+        "url": {
+          "raw": "{{base_url}}/auth/me",
+          "host": ["{{base_url}}"],
+          "path": ["auth", "me"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.response.to.have.status(200);",
+              "var jsonData = pm.response.json();",
+              "pm.expect(jsonData.data).to.have.property('rol');",
+              "pm.expect(jsonData.data).to.have.property('permisos');",
+              "pm.expect(jsonData.data.permisos).to.be.an('array');"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Clientes - Crear para DELETE logico",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Accept", "value": "application/json" },
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{bearer_token}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nombre\": \"Cliente Cierre Backend\",\n  \"telefono\": \"70000001\",\n  \"direccion\": \"Zona Centro\",\n  \"activo\": true\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/clientes",
+          "host": ["{{base_url}}"],
+          "path": ["clientes"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.response.to.have.status(201);",
+              "var jsonData = pm.response.json();",
+              "pm.collectionVariables.set('cliente_id_delete', jsonData.data.id);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Clientes - DELETE logico (activo=false)",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          { "key": "Accept", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{bearer_token}}" }
+        ],
+        "url": {
+          "raw": "{{base_url}}/clientes/{{cliente_id_delete}}",
+          "host": ["{{base_url}}"],
+          "path": ["clientes", "{{cliente_id_delete}}"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.response.to.have.status(200);",
+              "var jsonData = pm.response.json();",
+              "pm.expect(jsonData.data.activo).to.eql(false);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Ventas - Error 404 contrato",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Accept", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{bearer_token}}" }
+        ],
+        "url": {
+          "raw": "{{base_url}}/ventas/999999",
+          "host": ["{{base_url}}"],
+          "path": ["ventas", "999999"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.response.to.have.status(404);",
+              "var jsonData = pm.response.json();",
+              "pm.expect(jsonData).to.have.property('message');",
+              "pm.expect(jsonData).to.have.property('data');",
+              "pm.expect(jsonData).to.have.property('errors');",
+              "pm.expect(jsonData.data).to.eql(null);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Compras - Error 422 contrato",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Accept", "value": "application/json" },
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{bearer_token}}" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{}"
+        },
+        "url": {
+          "raw": "{{base_url}}/compras",
+          "host": ["{{base_url}}"],
+          "path": ["compras"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.response.to.have.status(422);",
+              "var jsonData = pm.response.json();",
+              "pm.expect(jsonData).to.have.property('message');",
+              "pm.expect(jsonData).to.have.property('data');",
+              "pm.expect(jsonData).to.have.property('errors');",
+              "pm.expect(jsonData.data).to.eql(null);"
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    { "key": "base_url", "value": "http://127.0.0.1:8000/api/v1" },
+    { "key": "bearer_token", "value": "" },
+    { "key": "cliente_id_delete", "value": "" }
+  ]
+}

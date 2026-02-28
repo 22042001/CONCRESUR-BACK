@@ -1,0 +1,216 @@
+{
+  "info": {
+    "_postman_id": "f2f2ca34-5e32-4d2b-89d3-5f3efdb03337",
+    "name": "CONCRESUR - Filtros y Paginacion",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Auth - Login Admin",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Accept", "value": "application/json" },
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"admin@concresur.com\",\n  \"password\": \"password\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/auth/login",
+          "host": ["{{base_url}}"],
+          "path": ["auth", "login"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.response.to.have.status(200);",
+              "var jsonData = pm.response.json();",
+              "pm.collectionVariables.set('bearer_token', jsonData.access_token);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Ventas - Listar con paginacion",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Accept", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{bearer_token}}" }
+        ],
+        "url": {
+          "raw": "{{base_url}}/ventas?per_page=5&estado_financiero=Pendiente&q=VTA",
+          "host": ["{{base_url}}"],
+          "path": ["ventas"],
+          "query": [
+            { "key": "per_page", "value": "5" },
+            { "key": "estado_financiero", "value": "Pendiente" },
+            { "key": "q", "value": "VTA" }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.response.to.have.status(200);",
+              "var jsonData = pm.response.json();",
+              "pm.expect(jsonData).to.have.property('message');",
+              "pm.expect(jsonData).to.have.property('data');",
+              "pm.expect(jsonData).to.have.property('meta');",
+              "pm.expect(jsonData.meta).to.have.property('current_page');",
+              "pm.expect(jsonData.meta).to.have.property('last_page');",
+              "pm.expect(jsonData.meta).to.have.property('per_page');",
+              "pm.expect(jsonData.meta).to.have.property('total');"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Cotizaciones - Filtro estado y busqueda",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Accept", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{bearer_token}}" }
+        ],
+        "url": {
+          "raw": "{{base_url}}/cotizaciones?per_page=5&estado=Pendiente&q=COT",
+          "host": ["{{base_url}}"],
+          "path": ["cotizaciones"],
+          "query": [
+            { "key": "per_page", "value": "5" },
+            { "key": "estado", "value": "Pendiente" },
+            { "key": "q", "value": "COT" }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.response.to.have.status(200);",
+              "var jsonData = pm.response.json();",
+              "pm.expect(jsonData.meta).to.have.property('total');"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Compras - Filtro y paginacion",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Accept", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{bearer_token}}" }
+        ],
+        "url": {
+          "raw": "{{base_url}}/compras?per_page=5&estado_financiero=Pendiente&q=CMP",
+          "host": ["{{base_url}}"],
+          "path": ["compras"],
+          "query": [
+            { "key": "per_page", "value": "5" },
+            { "key": "estado_financiero", "value": "Pendiente" },
+            { "key": "q", "value": "CMP" }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Ordenes Produccion - Filtro estado",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Accept", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{bearer_token}}" }
+        ],
+        "url": {
+          "raw": "{{base_url}}/ordenes-produccion?per_page=5&estado=Pendiente&q=OP",
+          "host": ["{{base_url}}"],
+          "path": ["ordenes-produccion"],
+          "query": [
+            { "key": "per_page", "value": "5" },
+            { "key": "estado", "value": "Pendiente" },
+            { "key": "q", "value": "OP" }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Logistica Pedidos - Filtro estado",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Accept", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{bearer_token}}" }
+        ],
+        "url": {
+          "raw": "{{base_url}}/logistica/pedidos?per_page=5&estado=En%20espera",
+          "host": ["{{base_url}}"],
+          "path": ["logistica", "pedidos"],
+          "query": [
+            { "key": "per_page", "value": "5" },
+            { "key": "estado", "value": "En espera" }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Clientes - Buscar por nombre",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Accept", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{bearer_token}}" }
+        ],
+        "url": {
+          "raw": "{{base_url}}/clientes?per_page=5&q=Cliente&activo=1",
+          "host": ["{{base_url}}"],
+          "path": ["clientes"],
+          "query": [
+            { "key": "per_page", "value": "5" },
+            { "key": "q", "value": "Cliente" },
+            { "key": "activo", "value": "1" }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Productos - Buscar",
+      "request": {
+        "method": "GET",
+        "header": [
+          { "key": "Accept", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{bearer_token}}" }
+        ],
+        "url": {
+          "raw": "{{base_url}}/productos?per_page=5&q=Bloque&activo=1",
+          "host": ["{{base_url}}"],
+          "path": ["productos"],
+          "query": [
+            { "key": "per_page", "value": "5" },
+            { "key": "q", "value": "Bloque" },
+            { "key": "activo", "value": "1" }
+          ]
+        }
+      }
+    }
+  ],
+  "variable": [
+    { "key": "base_url", "value": "http://127.0.0.1:8000/api/v1" },
+    { "key": "bearer_token", "value": "" }
+  ]
+}

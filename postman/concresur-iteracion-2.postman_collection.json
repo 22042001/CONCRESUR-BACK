@@ -1,0 +1,306 @@
+{
+  "info": {
+    "_postman_id": "6f47d52c-e5d2-49c2-b5b2-c5a0d7a5c3db",
+    "name": "CONCRESUR - Iteracion 2",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Cotizaciones - Listar",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/cotizaciones",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "cotizaciones"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Cotizaciones - Crear",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"cliente_id\": {{cliente_id}},\n  \"usuario_id\": {{usuario_id}},\n  \"detalles\": [\n    {\n      \"variante_id\": {{variante_id}},\n      \"cantidad\": 2,\n      \"precio_unitario\": 25.50\n    }\n  ]\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/cotizaciones",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "cotizaciones"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "if (pm.response.code === 201 || pm.response.code === 200) {",
+              "    var jsonData = pm.response.json();",
+              "    if (jsonData.data && jsonData.data.id) {",
+              "        pm.collectionVariables.set('cotizacion_id', jsonData.data.id);",
+              "    }",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Cotizaciones - Ver",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/cotizaciones/{{cotizacion_id}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "cotizaciones",
+            "{{cotizacion_id}}"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Cotizaciones - Confirmar",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"metodo_pago\": \"Contado\",\n  \"forma_pago\": \"Efectivo\",\n  \"fecha_entrega\": \"2026-03-05\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/cotizaciones/{{cotizacion_id}}/confirmar",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "cotizaciones",
+            "{{cotizacion_id}}",
+            "confirmar"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "if (pm.response.code === 200 || pm.response.code === 201) {",
+              "    var jsonData = pm.response.json();",
+              "    if (jsonData.data && jsonData.data.id) {",
+              "        pm.collectionVariables.set('venta_id', jsonData.data.id);",
+              "    }",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Ventas - Listar",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/ventas",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "ventas"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "if (pm.response.code === 200) {",
+              "    var jsonData = pm.response.json();",
+              "    if (jsonData.data && jsonData.data.length > 0) {",
+              "        pm.collectionVariables.set('venta_id', jsonData.data[0].id);",
+              "    }",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Ventas - Ver",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/ventas/{{venta_id}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "ventas",
+            "{{venta_id}}"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Ventas - Crear Directa",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"cliente_id\": {{cliente_id}},\n  \"usuario_id\": {{usuario_id}},\n  \"metodo_pago\": \"Contado\",\n  \"forma_pago\": \"Efectivo\",\n  \"fecha_entrega\": \"2026-03-06\",\n  \"detalles\": [\n    {\n      \"variante_id\": {{variante_id}},\n      \"cantidad\": 1,\n      \"precio_unitario\": 26.00\n    }\n  ]\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/ventas/directa",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "ventas",
+            "directa"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "if (pm.response.code === 201 || pm.response.code === 200) {",
+              "    var jsonData = pm.response.json();",
+              "    if (jsonData.data && jsonData.data.id) {",
+              "        pm.collectionVariables.set('venta_id', jsonData.data.id);",
+              "    }",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Ventas - Registrar Abono",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"monto\": 50.00,\n  \"forma_pago\": \"Efectivo\",\n  \"usuario_id\": {{usuario_id}}\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/ventas/{{venta_id}}/abonos",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "ventas",
+            "{{venta_id}}",
+            "abonos"
+          ]
+        }
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://127.0.0.1:8000/api/v1"
+    },
+    {
+      "key": "cliente_id",
+      "value": "1"
+    },
+    {
+      "key": "usuario_id",
+      "value": "1"
+    },
+    {
+      "key": "variante_id",
+      "value": "1"
+    },
+    {
+      "key": "cotizacion_id",
+      "value": "1"
+    },
+    {
+      "key": "venta_id",
+      "value": "1"
+    }
+  ]
+}

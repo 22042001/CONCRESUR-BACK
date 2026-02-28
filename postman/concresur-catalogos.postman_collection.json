@@ -1,0 +1,663 @@
+{
+  "info": {
+    "_postman_id": "2c01fd92-b0bb-4a73-b2d2-4e3f39d0e1ad",
+    "name": "CONCRESUR - Catalogos",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Clientes - Listar",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/clientes",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "clientes"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "if (pm.response.code === 200) {",
+              "    var jsonData = pm.response.json();",
+              "    if (jsonData.data && jsonData.data.length > 0) {",
+              "        pm.collectionVariables.set('cliente_id', jsonData.data[0].id);",
+              "    }",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Clientes - Crear",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nombre\": \"Cliente Demo\",\n  \"telefono\": \"77770001\",\n  \"direccion\": \"Zona Norte\",\n  \"activo\": true\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/clientes",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "clientes"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "if (pm.response.code === 201 || pm.response.code === 200) {",
+              "    var jsonData = pm.response.json();",
+              "    if (jsonData.data && jsonData.data.id) {",
+              "        pm.collectionVariables.set('cliente_id', jsonData.data.id);",
+              "    }",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Clientes - Ver",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/clientes/{{cliente_id}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "clientes",
+            "{{cliente_id}}"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Proveedores - Listar",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/proveedores",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "proveedores"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "if (pm.response.code === 200) {",
+              "    var jsonData = pm.response.json();",
+              "    if (jsonData.data && jsonData.data.length > 0) {",
+              "        pm.collectionVariables.set('proveedor_id', jsonData.data[0].id);",
+              "    }",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Proveedores - Crear",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nombre\": \"Proveedor Demo\",\n  \"telefono\": \"77770002\",\n  \"observaciones\": \"Proveedor local\",\n  \"activo\": true\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/proveedores",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "proveedores"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "if (pm.response.code === 201 || pm.response.code === 200) {",
+              "    var jsonData = pm.response.json();",
+              "    if (jsonData.data && jsonData.data.id) {",
+              "        pm.collectionVariables.set('proveedor_id', jsonData.data.id);",
+              "    }",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Proveedores - Ver",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/proveedores/{{proveedor_id}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "proveedores",
+            "{{proveedor_id}}"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Personal - Listar",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/personal",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "personal"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "if (pm.response.code === 200) {",
+              "    var jsonData = pm.response.json();",
+              "    if (jsonData.data && jsonData.data.length > 0) {",
+              "        pm.collectionVariables.set('personal_id', jsonData.data[0].id);",
+              "    }",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Personal - Crear",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nombre\": \"Maestro Demo\",\n  \"telefono\": \"77770003\",\n  \"tipo\": \"maestro\",\n  \"activo\": true\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/personal",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "personal"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "if (pm.response.code === 201 || pm.response.code === 200) {",
+              "    var jsonData = pm.response.json();",
+              "    if (jsonData.data && jsonData.data.id) {",
+              "        pm.collectionVariables.set('personal_id', jsonData.data.id);",
+              "    }",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Personal - Ver",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/personal/{{personal_id}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "personal",
+            "{{personal_id}}"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Categorias Compra - Listar",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/categorias-compra",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "categorias-compra"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "if (pm.response.code === 200) {",
+              "    var jsonData = pm.response.json();",
+              "    if (jsonData.data && jsonData.data.length > 0) {",
+              "        pm.collectionVariables.set('categoria_compra_id', jsonData.data[0].id);",
+              "    }",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Categorias Compra - Crear",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nombre\": \"Materia prima\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/categorias-compra",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "categorias-compra"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "if (pm.response.code === 201 || pm.response.code === 200) {",
+              "    var jsonData = pm.response.json();",
+              "    if (jsonData.data && jsonData.data.id) {",
+              "        pm.collectionVariables.set('categoria_compra_id', jsonData.data.id);",
+              "    }",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Categorias Compra - Ver",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/categorias-compra/{{categoria_compra_id}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "categorias-compra",
+            "{{categoria_compra_id}}"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Productos - Listar",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/productos",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "productos"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "if (pm.response.code === 200) {",
+              "    var jsonData = pm.response.json();",
+              "    if (jsonData.data && jsonData.data.length > 0) {",
+              "        pm.collectionVariables.set('producto_id', jsonData.data[0].id);",
+              "    }",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Productos - Crear",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nombre\": \"Bloque 12\",\n  \"descripcion\": \"Bloque de hormigon\",\n  \"activo\": true\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/productos",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "productos"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "if (pm.response.code === 201 || pm.response.code === 200) {",
+              "    var jsonData = pm.response.json();",
+              "    if (jsonData.data && jsonData.data.id) {",
+              "        pm.collectionVariables.set('producto_id', jsonData.data.id);",
+              "    }",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Productos - Ver",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/productos/{{producto_id}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "productos",
+            "{{producto_id}}"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Variantes Producto - Listar",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/variantes-producto",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "variantes-producto"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "if (pm.response.code === 200) {",
+              "    var jsonData = pm.response.json();",
+              "    if (jsonData.data && jsonData.data.length > 0) {",
+              "        pm.collectionVariables.set('variante_id', jsonData.data[0].id);",
+              "    }",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Variantes Producto - Crear",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"producto_id\": {{producto_id}},\n  \"nombre\": \"12x20\",\n  \"unidad_medida\": \"unidad\",\n  \"precio_venta\": 12.50,\n  \"stock_actual\": 100,\n  \"stock_minimo\": 20,\n  \"activo\": true\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/variantes-producto",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "variantes-producto"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "if (pm.response.code === 201 || pm.response.code === 200) {",
+              "    var jsonData = pm.response.json();",
+              "    if (jsonData.data && jsonData.data.id) {",
+              "        pm.collectionVariables.set('variante_id', jsonData.data.id);",
+              "    }",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Variantes Producto - Ver",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/variantes-producto/{{variante_id}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "variantes-producto",
+            "{{variante_id}}"
+          ]
+        }
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://127.0.0.1:8000/api/v1"
+    },
+    {
+      "key": "cliente_id",
+      "value": ""
+    },
+    {
+      "key": "proveedor_id",
+      "value": ""
+    },
+    {
+      "key": "personal_id",
+      "value": ""
+    },
+    {
+      "key": "categoria_compra_id",
+      "value": ""
+    },
+    {
+      "key": "producto_id",
+      "value": ""
+    },
+    {
+      "key": "variante_id",
+      "value": ""
+    }
+  ]
+}

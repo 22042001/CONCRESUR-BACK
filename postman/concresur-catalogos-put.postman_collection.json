@@ -1,0 +1,219 @@
+{
+  "info": {
+    "_postman_id": "5f53f383-7d5c-4d2f-8ad8-d8adf79f86a8",
+    "name": "CONCRESUR - Catalogos PUT",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Clientes - Actualizar",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nombre\": \"Cliente Demo Actualizado\",\n  \"telefono\": \"77779999\",\n  \"direccion\": \"Zona Sur\",\n  \"activo\": true\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/clientes/{{cliente_id}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "clientes",
+            "{{cliente_id}}"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Proveedores - Actualizar",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nombre\": \"Proveedor Demo Actualizado\",\n  \"telefono\": \"77778888\",\n  \"observaciones\": \"Proveedor preferente\",\n  \"activo\": true\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/proveedores/{{proveedor_id}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "proveedores",
+            "{{proveedor_id}}"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Personal - Actualizar",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nombre\": \"Maestro Demo Actualizado\",\n  \"telefono\": \"77776666\",\n  \"tipo\": \"maestro\",\n  \"activo\": true\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/personal/{{personal_id}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "personal",
+            "{{personal_id}}"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Categorias Compra - Actualizar",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nombre\": \"Materia prima actualizada\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/categorias-compra/{{categoria_compra_id}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "categorias-compra",
+            "{{categoria_compra_id}}"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Productos - Actualizar",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nombre\": \"Bloque 12 Actualizado\",\n  \"descripcion\": \"Bloque de hormigon reforzado\",\n  \"activo\": true\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/productos/{{producto_id}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "productos",
+            "{{producto_id}}"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Variantes Producto - Actualizar",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"producto_id\": {{producto_id}},\n  \"nombre\": \"12x20 Ajustado\",\n  \"unidad_medida\": \"unidad\",\n  \"precio_venta\": 13.75,\n  \"stock_actual\": 120,\n  \"stock_minimo\": 25,\n  \"activo\": true\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/variantes-producto/{{variante_id}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "variantes-producto",
+            "{{variante_id}}"
+          ]
+        }
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://127.0.0.1:8000/api/v1"
+    },
+    {
+      "key": "cliente_id",
+      "value": "1"
+    },
+    {
+      "key": "proveedor_id",
+      "value": "1"
+    },
+    {
+      "key": "personal_id",
+      "value": "1"
+    },
+    {
+      "key": "categoria_compra_id",
+      "value": "1"
+    },
+    {
+      "key": "producto_id",
+      "value": "1"
+    },
+    {
+      "key": "variante_id",
+      "value": "1"
+    }
+  ]
+}
